@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Contato</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        h1 { text-align: center; color: #007bff; }
+        form { background-color: #ffffff; padding: 30px; margin-top: 20px; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); width: 100%; max-width: 600px; }
+        form label { font-weight: bold; margin-top: 10px; display: block; color: #333; }
+        form input, form textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; background-color: #f9f9f9; box-sizing: border-box; }
+        form input:focus, form textarea:focus { border-color: #007bff; outline: none; }
+        form textarea { height: 150px; resize: vertical; }
+        .error { color: red; font-size: 0.9em; display: none; }
+        form button { background-color: #007bff; color: white; border: none; padding: 12px 20px; margin-top: 20px; border-radius: 4px; font-size: 1.2em; cursor: pointer; width: 100%; transition: background-color 0.3s ease; }
+        form button:hover { background-color: #0056b3; }
+        #thankYouMessage { font-size: 1.2em; color: #28a745; font-weight: bold; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Formulário de Contato</h1>
+    <form id="contactForm">
+        <label for="name">Nome:</label>
+        <input type="text" id="name" required>
+        <span id="nameError" class="error"></span>
+        
+        <label for="email">Email:</label>
+        <input type="email" id="email" required>
+        <span id="emailError" class="error"></span>
+        
+        <label for="message">Mensagem:</label>
+        <textarea id="message" required></textarea>
+        <span id="messageError" class="error"></span>
+        
+        <button type="submit">Enviar</button>
+    </form>
+
+    <p id="thankYouMessage" style="display: none;">Obrigado pelo contato!</p>
+
+    <script>
+        const form = document.getElementById("contactForm");
+        const thankYouMessage = document.getElementById("thankYouMessage");
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            let isValid = true;
+
+            // Validação de Nome
+            const name = document.getElementById("name").value;
+            if (name.length < 2) {
+                document.getElementById("nameError").innerText = "Nome deve ter ao menos 2 caracteres.";
+                isValid = false;
+            } else {
+                document.getElementById("nameError").innerText = "";
+            }
+
+            // Validação de Email
+            const email = document.getElementById("email").value;
+            if (!email.includes("@") || !email.includes(".")) {
+                document.getElementById("emailError").innerText = "Email inválido.";
+                isValid = false;
+            } else {
+                document.getElementById("emailError").innerText = "";
+            }
+
+            // Validação de Mensagem
+            const message = document.getElementById("message").value;
+            if (message.trim() === "") {
+                document.getElementById("messageError").innerText = "Mensagem não pode estar vazia.";
+                isValid = false;
+            } else {
+                document.getElementById("messageError").innerText = "";
+            }
+
+            // Enviar dados ao backend se tudo estiver válido
+            if (isValid) {
+                fetch("/contact/submit/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
+                    body: JSON.stringify({ name: name, email: email, message: message }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        form.style.display = "none";
+                        thankYouMessage.style.display = "block";
+                    } else {
+                        alert("Erro ao enviar mensagem. Tente novamente.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Erro:", error);
+                    alert("Erro ao enviar mensagem. Tente novamente.");
+                });
+            }
+        });
+
+        // Função para obter o CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === name + "=") {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
